@@ -76,7 +76,7 @@ jobs:
       - name: Test built package with pytest
         run: |
           source .venv/bin/activate
-          python -m pytest -s
+          pytest -s
 
   docker-test:
     runs-on: ubuntu-latest
@@ -114,7 +114,6 @@ jobs:
         run: |
           docker run -v "$PWD"/data:/data archivebox list | grep -q "www.test-nginx-1.local" || { echo "The site 1 isn't in the list"; exit 1; }
           docker run -v "$PWD"/data:/data archivebox list | grep -q "www.test-nginx-2.local" || { echo "The site 2 isn't in the list"; exit 1; }
-
 
       - name: Start docker-compose stack
         run: |
