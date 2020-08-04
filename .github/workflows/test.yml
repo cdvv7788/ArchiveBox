@@ -45,6 +45,7 @@ jobs:
           fetch-depth: 1
           repository: "gildas-lormeau/SingleFile"
           ref: "master"
+          path: "singlefile"
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v1
