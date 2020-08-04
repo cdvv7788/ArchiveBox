@@ -40,6 +40,12 @@ jobs:
         with:
           fetch-depth: 1
 
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          repository: "gildas-lormeau/SingleFile"
+          ref: "master"
+
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v1
         with:
@@ -60,15 +66,8 @@ jobs:
         with:
           node-version: 14.7.0
 
-      - name: Download singlefile
-        uses: wei/wget@v1
-        with:
-          args: -O singlefile.zip https://github.com/gildas-lormeau/SingleFile/archive/master.zip
-
-      - name: Unzip singlefile
-        uses: montudor/action-zip@v0.1.0
-        with:
-          args: unzip -qq singlefile.zip -d ./singlefile
+      - name: Debug
+        run: ls ./
 
       - name: Install dependencies
         run: |
