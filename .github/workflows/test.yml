@@ -47,6 +47,9 @@ jobs:
           ref: "master"
           path: "singlefile"
 
+      - name: Install npm requirements for singlefile
+        run: npm install --prefix singlefile/cli
+
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v1
         with:
