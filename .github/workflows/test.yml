@@ -55,6 +55,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.python }}-venv-
 
+      - name: Use nodejs 14.7.0
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.7.0
+
+      - name: Download singlefile
+        uses: wei/wget@v1
+        with:
+          args: -O singlefile.zip https://github.com/gildas-lormeau/SingleFile/archive/master.zip
+
+      - name: Unzip singlefile
+        uses: montudor/action-zip@v0.1.0
+        with:
+          args: unzip -qq singlefile.zip -d ./singlefile
+
       - name: Install dependencies
         run: |
           python -m pip install .
