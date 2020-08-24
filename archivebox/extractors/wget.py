@@ -7,7 +7,7 @@ from typing import Optional
 from datetime import datetime
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run, chmod_file
+from ..system import run_async, chmod_file, ignore_cancel_async_task
 from ..util import (
     enforce_types,
     is_static_file,
@@ -33,7 +33,6 @@ from ..config import (
 )
 from ..logging_util import TimedProgress
 
-
 @enforce_types
 def should_save_wget(link: Link, out_dir: Optional[str]=None) -> bool:
     output_path = wget_output_path(link)
@@ -44,8 +43,9 @@ def should_save_wget(link: Link, out_dir: Optional[str]=None) -> bool:
     return SAVE_WGET
 
 
+@ignore_cancel_async_task
 @enforce_types
-def save_wget(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+async def save_wget(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """download full site using wget"""
 
     out_dir = out_dir or link.link_dir
@@ -82,7 +82,7 @@ def save_wget(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> 
     status = 'succeeded'
     timer = TimedProgress(timeout, prefix='      ')
     try:
-        result = run(cmd, cwd=out_dir, timeout=timeout)
+        result = await run_async(cmd, cwd=out_dir, timeout=timeout)
         output = wget_output_path(link)
 
         # parse out number of files downloaded from last line of stderr:

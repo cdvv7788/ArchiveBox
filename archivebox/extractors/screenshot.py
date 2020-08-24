@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run, chmod_file
+from ..system import run_async, chmod_file, ignore_cancel_async_task
 from ..util import (
     enforce_types,
     is_static_file,
@@ -31,8 +31,9 @@ def should_save_screenshot(link: Link, out_dir: Optional[str]=None) -> bool:
 
     return SAVE_SCREENSHOT
 
+@ignore_cancel_async_task
 @enforce_types
-def save_screenshot(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+async def save_screenshot(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """take screenshot of site using chrome --headless"""
     
     out_dir = out_dir or link.link_dir
@@ -45,7 +46,7 @@ def save_screenshot(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOU
     status = 'succeeded'
     timer = TimedProgress(timeout, prefix='      ')
     try:
-        result = run(cmd, cwd=out_dir, timeout=timeout)
+        result = await run_async(cmd, cwd=out_dir, timeout=timeout)
 
         if result.returncode:
             hints = (result.stderr or result.stdout).decode()

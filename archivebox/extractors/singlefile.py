@@ -1,12 +1,11 @@
 __package__ = 'archivebox.extractors'
 
 from pathlib import Path
-
 from typing import Optional
 import json
 
 from ..index.schema import Link, ArchiveResult, ArchiveError
-from ..system import run, chmod_file
+from ..system import run_async, chmod_file, ignore_cancel_async_task
 from ..util import (
     enforce_types,
     is_static_file,
@@ -31,9 +30,9 @@ def should_save_singlefile(link: Link, out_dir: Optional[str]=None) -> bool:
     output = Path(out_dir or link.link_dir) / 'singlefile.html'
     return SAVE_SINGLEFILE and SINGLEFILE_VERSION and (not output.exists())
 
-
+@ignore_cancel_async_task
 @enforce_types
-def save_singlefile(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+async def save_singlefile(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """download full site using single-file"""
 
     out_dir = out_dir or link.link_dir
@@ -53,7 +52,7 @@ def save_singlefile(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOU
     status = 'succeeded'
     timer = TimedProgress(timeout, prefix='      ')
     try:
-        result = run(cmd, cwd=out_dir, timeout=timeout)
+        result = await run_async(cmd, cwd=out_dir, timeout=timeout)
 
         # parse out number of files downloaded from last line of stderr:
         #  "Downloaded: 76 files, 4.0M in 1.6s (2.52 MB/s)"

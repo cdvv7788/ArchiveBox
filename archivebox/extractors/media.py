@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run, chmod_file
+from ..system import run_async, chmod_file, ignore_cancel_async_task
 from ..util import (
     enforce_types,
     is_static_file,
@@ -33,8 +33,9 @@ def should_save_media(link: Link, out_dir: Optional[str]=None) -> bool:
 
     return SAVE_MEDIA
 
+@ignore_cancel_async_task
 @enforce_types
-def save_media(link: Link, out_dir: Optional[str]=None, timeout: int=MEDIA_TIMEOUT) -> ArchiveResult:
+async def save_media(link: Link, out_dir: Optional[str]=None, timeout: int=MEDIA_TIMEOUT) -> ArchiveResult:
     """Download playlists or individual video, audio, and subtitles using youtube-dl"""
 
     out_dir = out_dir or link.link_dir
@@ -66,7 +67,7 @@ def save_media(link: Link, out_dir: Optional[str]=None, timeout: int=MEDIA_TIMEO
     status = 'succeeded'
     timer = TimedProgress(timeout, prefix='      ')
     try:
-        result = run(cmd, cwd=output_path, timeout=timeout + 1)
+        result = await run_async(cmd, cwd=output_path, timeout=timeout + 1)
         chmod_file(output, cwd=out_dir)
         if result.returncode:
             if (b'ERROR: Unsupported URL' in result.stderr

@@ -1,6 +1,7 @@
 __package__ = 'archivebox.extractors'
 
 import os
+import asyncio
 
 from typing import Optional, List, Iterable
 from datetime import datetime
@@ -55,6 +56,22 @@ def ignore_methods(to_ignore: List[str]):
     methods = map(lambda x: x[1], methods)
     return list(methods)
 
+async def run_method(method_name, method_function, link, out_dir, stats):
+    try:
+        log_archive_method_started(method_name)
+        result = await method_function(link=link, out_dir=out_dir)
+        link.history[method_name].append(result)
+        try:
+            stats[result.status] += 1
+            log_archive_method_finished(result)
+        except AttributeError:
+            stats["failed"] += 1
+    except (Exception, BaseException) as e:
+        raise Exception('Exception in archive_methods.save_{}(Link(url={}))'.format(
+            method_name,
+            link.url,
+        )) from e
+
 @enforce_types
 def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[str]]=None, out_dir: Optional[str]=None, skip_index: bool=False) -> Link:
     """download the DOM, PDF, and a screenshot into a folder named after the link's timestamp"""
@@ -78,6 +95,7 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
         log_link_archiving_started(link, out_dir, is_new)
         link = link.overwrite(updated=datetime.now())
         stats = {'skipped': 0, 'succeeded': 0, 'failed': 0}
+        tasks = []
 
         for method_name, should_run, method_function in ARCHIVE_METHODS:
             try:
@@ -85,14 +103,11 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                     link.history[method_name] = []
 
                 if should_run(link, out_dir) or overwrite:
-                    log_archive_method_started(method_name)
-
-                    result = method_function(link=link, out_dir=out_dir)
-
-                    link.history[method_name].append(result)
-
-                    stats[result.status] += 1
-                    log_archive_method_finished(result)
+                    if method_name == "title":
+                        result = method_function(link, out_dir)
+                        stats[result.status] += 1
+                    else:
+                        tasks.append(run_method(method_name, method_function, link, out_dir, stats))
                 else:
                     # print('{black}      X {}{reset}'.format(method_name, **ANSI))
                     stats['skipped'] += 1
@@ -101,6 +116,10 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                     method_name,
                     link.url,
                 )) from e
+
+        gather_tasks = asyncio.gather(*tasks, return_exceptions=True)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(gather_tasks)
 
         # print('    ', stats)
 
@@ -118,6 +137,12 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
     except KeyboardInterrupt:
         try:
             write_link_details(link, out_dir=link.link_dir)
+            gather_tasks.cancel()
+            # KeyboardInterrupt stops the loop, so we have to start it again
+            # Running `run_until_complete will raise an asyncio.CancelledError`
+            # We can just ignore it
+            # https://stackoverflow.com/questions/30765606/whats-the-correct-way-to-clean-up-after-an-interrupted-event-loop
+            loop.run_until_complete(gather_tasks)
         except:
             pass
         raise
@@ -125,6 +150,9 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
     except Exception as err:
         print('    ! Failed to archive link: {}: {}'.format(err.__class__.__name__, err))
         raise
+
+    finally:
+        loop.close()
 
     return link
 

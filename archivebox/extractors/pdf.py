@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run, chmod_file
+from ..system import run_async, chmod_file, ignore_cancel_async_task
 from ..util import (
     enforce_types,
     is_static_file,
@@ -30,9 +30,9 @@ def should_save_pdf(link: Link, out_dir: Optional[str]=None) -> bool:
 
     return SAVE_PDF
 
-
+@ignore_cancel_async_task
 @enforce_types
-def save_pdf(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+async def save_pdf(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """print PDF of site to file using chrome --headless"""
 
     out_dir = out_dir or link.link_dir
@@ -45,7 +45,7 @@ def save_pdf(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> A
     status = 'succeeded'
     timer = TimedProgress(timeout, prefix='      ')
     try:
-        result = run(cmd, cwd=out_dir, timeout=timeout)
+        result = await run_async(cmd, cwd=out_dir, timeout=timeout)
 
         if result.returncode:
             hints = (result.stderr or result.stdout).decode()

@@ -3,6 +3,8 @@ __package__ = 'archivebox'
 
 import os
 import shutil
+import asyncio
+
 
 from json import dump
 from pathlib import Path
@@ -31,6 +33,30 @@ def run(*args, input=None, capture_output=True, text=False, **kwargs):
 
     return subprocess_run(*args, input=input, capture_output=capture_output, text=text, **kwargs)
 
+async def run_async(cmd, cwd, timeout):
+    class MockResponse():
+        pass
+
+    process = asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=cwd)
+    proc = await process
+
+    response = MockResponse()
+    #response.stdout, response.stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    response.stdout, response.stderr = await proc.communicate()
+    response.returncode = proc.returncode
+    return response
+
+def ignore_cancel_async_task(async_task):
+    async def inner(*args, **kwargs):
+        try:
+            return await async_task(*args, **kwargs)
+        except asyncio.CancelledError:
+            pass
+    return inner
 
 @enforce_types
 def atomic_write(path: Union[Path, str], contents: Union[dict, str, bytes], overwrite: bool=True) -> None:
