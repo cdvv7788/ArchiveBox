@@ -7,7 +7,7 @@ from typing import Optional
 from datetime import datetime
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run_async, chmod_file, ignore_cancel_async_task
+from ..system import run_async, chmod_file
 from ..util import (
     enforce_types,
     is_static_file,
@@ -43,7 +43,6 @@ def should_save_wget(link: Link, out_dir: Optional[str]=None) -> bool:
     return SAVE_WGET
 
 
-@ignore_cancel_async_task
 @enforce_types
 async def save_wget(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """download full site using wget"""

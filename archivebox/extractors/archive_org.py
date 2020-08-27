@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Tuple
 from collections import defaultdict
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run_async, chmod_file, ignore_cancel_async_task
+from ..system import run_async, chmod_file
 from ..util import (
     enforce_types,
     is_static_file,
@@ -35,7 +35,6 @@ def should_save_archive_dot_org(link: Link, out_dir: Optional[str]=None) -> bool
 
     return SAVE_ARCHIVE_DOT_ORG
 
-@ignore_cancel_async_task
 @enforce_types
 async def save_archive_dot_org(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """submit site to archive.org for archiving via their service, save returned archive url"""

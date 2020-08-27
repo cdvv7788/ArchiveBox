@@ -1,7 +1,7 @@
 __package__ = 'archivebox.extractors'
 
 import os
-import asyncio
+import trio
 
 from typing import Optional, List, Iterable
 from datetime import datetime
@@ -66,11 +66,16 @@ async def run_method(method_name, method_function, link, out_dir, stats):
             log_archive_method_finished(result)
         except AttributeError:
             stats["failed"] += 1
-    except (Exception, BaseException) as e:
+    except Exception:
         raise Exception('Exception in archive_methods.save_{}(Link(url={}))'.format(
             method_name,
             link.url,
         )) from e
+
+async def tasks_nursery(tasks):
+    async with trio.open_nursery() as nursery:
+        for task in tasks:
+            nursery.start_soon(task[0], *task[1])
 
 @enforce_types
 def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[str]]=None, out_dir: Optional[str]=None, skip_index: bool=False) -> Link:
@@ -107,7 +112,7 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                         result = method_function(link, out_dir)
                         stats[result.status] += 1
                     else:
-                        tasks.append(run_method(method_name, method_function, link, out_dir, stats))
+                        tasks.append((run_method, (method_name, method_function, link, out_dir, stats)))
                 else:
                     # print('{black}      X {}{reset}'.format(method_name, **ANSI))
                     stats['skipped'] += 1
@@ -117,11 +122,7 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                     link.url,
                 )) from e
 
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        loop.run_until_complete(asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED))
+        trio.run(tasks_nursery, tasks)
 
         # print('    ', stats)
 
@@ -139,14 +140,6 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
     except KeyboardInterrupt:
         try:
             write_link_details(link, out_dir=link.link_dir)
-
-            for task in asyncio.all_tasks():
-                task.cancel()
-            # KeyboardInterrupt stops the loop, so we have to start it again
-            # Running `run_until_complete will raise an asyncio.CancelledError`
-            # We can just ignore it
-            # https://stackoverflow.com/questions/30765606/whats-the-correct-way-to-clean-up-after-an-interrupted-event-loop
-            loop.run_forever()
         except:
             pass
         raise

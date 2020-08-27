@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from ..index.schema import Link, ArchiveResult, ArchiveOutput, ArchiveError
-from ..system import run_async, chmod_file, ignore_cancel_async_task
+from ..system import run_async, chmod_file
 from ..util import (
     enforce_types,
     is_static_file,
@@ -44,7 +44,6 @@ def should_save_git(link: Link, out_dir: Optional[str]=None) -> bool:
 
     return SAVE_GIT
 
-@ignore_cancel_async_task
 @enforce_types
 async def save_git(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """download full site using git"""

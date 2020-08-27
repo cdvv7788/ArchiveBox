@@ -5,7 +5,7 @@ from typing import Optional
 import json
 
 from ..index.schema import Link, ArchiveResult, ArchiveError
-from ..system import run_async, chmod_file, ignore_cancel_async_task
+from ..system import run_async, chmod_file
 from ..util import (
     enforce_types,
     is_static_file,
@@ -30,7 +30,6 @@ def should_save_singlefile(link: Link, out_dir: Optional[str]=None) -> bool:
     output = Path(out_dir or link.link_dir) / 'singlefile.html'
     return SAVE_SINGLEFILE and SINGLEFILE_VERSION and (not output.exists())
 
-@ignore_cancel_async_task
 @enforce_types
 async def save_singlefile(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """download full site using single-file"""

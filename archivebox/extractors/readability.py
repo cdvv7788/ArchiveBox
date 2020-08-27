@@ -7,7 +7,7 @@ from typing import Optional
 import json
 
 from ..index.schema import Link, ArchiveResult, ArchiveError
-from ..system import run_async, atomic_write, ignore_cancel_async_task
+from ..system import run_async, atomic_write
 from ..util import (
     enforce_types,
     download_url,
@@ -54,7 +54,6 @@ def should_save_readability(link: Link, out_dir: Optional[str]=None) -> bool:
     return SAVE_READABILITY and READABILITY_VERSION and (not output.exists())
 
 
-@ignore_cancel_async_task
 @enforce_types
 async def save_readability(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
     """download reader friendly version using @mozilla/readability"""
