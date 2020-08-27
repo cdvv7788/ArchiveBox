@@ -87,6 +87,7 @@ setuptools.setup(
         "python-crontab==2.5.1",
         "croniter==0.3.34",
         "w3lib==1.22.0",
+        "trio==0.16.0",
         # Some/all of these will likely be added in the future:
         # wpull
         # pywb
