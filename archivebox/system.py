@@ -45,16 +45,18 @@ async def run_async(cmd, cwd, timeout):
     proc = await process
 
     response = MockResponse()
-    #response.stdout, response.stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-    response.stdout, response.stderr = await proc.communicate()
+    response.stdout, response.stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    #response.stdout, response.stderr = await proc.communicate()
     response.returncode = proc.returncode
     return response
 
 def ignore_cancel_async_task(async_task):
+    return async_task
     async def inner(*args, **kwargs):
         try:
             return await async_task(*args, **kwargs)
         except asyncio.CancelledError:
+            print("this was reached")
             pass
     return inner
 

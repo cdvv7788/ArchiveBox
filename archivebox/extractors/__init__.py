@@ -117,9 +117,11 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                     link.url,
                 )) from e
 
-        gather_tasks = asyncio.gather(*tasks, return_exceptions=True)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(gather_tasks)
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.run_until_complete(asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED))
 
         # print('    ', stats)
 
@@ -137,12 +139,14 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
     except KeyboardInterrupt:
         try:
             write_link_details(link, out_dir=link.link_dir)
-            gather_tasks.cancel()
+
+            for task in asyncio.all_tasks():
+                task.cancel()
             # KeyboardInterrupt stops the loop, so we have to start it again
             # Running `run_until_complete will raise an asyncio.CancelledError`
             # We can just ignore it
             # https://stackoverflow.com/questions/30765606/whats-the-correct-way-to-clean-up-after-an-interrupted-event-loop
-            loop.run_until_complete(gather_tasks)
+            loop.run_forever()
         except:
             pass
         raise
@@ -152,7 +156,10 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
         raise
 
     finally:
-        loop.close()
+        try:
+            loop.close()
+        except:
+            pass
 
     return link
 
