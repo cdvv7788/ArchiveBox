@@ -110,6 +110,7 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                 if should_run(link, out_dir) or overwrite:
                     if method_name == "title":
                         result = method_function(link, out_dir)
+                        link.history[method_name].append(result)
                         stats[result.status] += 1
                     else:
                         tasks.append((run_method, (method_name, method_function, link, out_dir, stats)))
@@ -147,12 +148,6 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
     except Exception as err:
         print('    ! Failed to archive link: {}: {}'.format(err.__class__.__name__, err))
         raise
-
-    finally:
-        try:
-            loop.close()
-        except:
-            pass
 
     return link
 
