@@ -66,7 +66,7 @@ async def run_method(method_name, method_function, link, out_dir, stats):
             log_archive_method_finished(result)
         except AttributeError:
             stats["failed"] += 1
-    except Exception:
+    except Exception as e:
         raise Exception('Exception in archive_methods.save_{}(Link(url={}))'.format(
             method_name,
             link.url,
