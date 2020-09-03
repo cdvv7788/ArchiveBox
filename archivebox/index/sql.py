@@ -51,6 +51,20 @@ def write_sql_main_index(links: List[Link], out_dir: str=OUTPUT_DIR) -> None:
         for link in links:
             write_link_to_sql_index(link)
             
+@enforce_types
+def database_apply(link: Link, to_apply: Tuple[str, str, str]):
+    setup_django(check_db=True)
+    from core.models import Snapshot
+    from django.db import transaction
+
+    with transaction.atomic():
+        try:
+            snap = Snapshot.objects.get(url=link.url)
+        except Snapshot.DoesNotExist:
+            snap = write_link_to_sql_index(link)
+
+    setattr(snap, to_apply[1], to_apply[2])
+    snap.save()
 
 @enforce_types
 def write_sql_link_details(link: Link, out_dir: str=OUTPUT_DIR) -> None:

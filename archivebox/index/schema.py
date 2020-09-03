@@ -5,7 +5,7 @@ from pathlib import Path
 
 from datetime import datetime, timedelta
 
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Tuple
 
 from dataclasses import dataclass, asdict, field, fields
 
@@ -21,7 +21,7 @@ class ArchiveError(Exception):
 
 LinkDict = Dict[str, Any]
 
-ArchiveOutput = Union[str, Exception, None]
+ArchiveOutput = Union[str, Exception, None, Tuple[str, str, str], Tuple[str, Exception]]
 
 @dataclass(frozen=True)
 class ArchiveResult:
@@ -49,7 +49,7 @@ class ArchiveResult:
         assert all(isinstance(arg, str) and arg for arg in self.cmd)
         assert self.pwd is None or isinstance(self.pwd, str) and self.pwd
         assert self.cmd_version is None or isinstance(self.cmd_version, str) and self.cmd_version
-        assert self.output is None or isinstance(self.output, (str, Exception))
+        assert self.output is None or isinstance(self.output, (str, Exception)) or isinstance(self.output, tuple)
         if isinstance(self.output, str):
             assert self.output
 

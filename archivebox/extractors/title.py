@@ -83,3 +83,46 @@ def save_title(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) ->
         status=status,
         **timer.stats,
     )
+
+@enforce_types
+def get_title(link: Link, timeout: int=TIMEOUT) -> ArchiveResult:
+    """
+    Try to guess the page's title from it's content
+    """
+
+    output: ArchiveOutput = None
+    cmd = [
+        CURL_BINARY,
+        '--silent',
+        '--max-time', str(timeout),
+        '--location',
+        '--compressed',
+        *(['--user-agent', '{}'.format(CURL_USER_AGENT)] if CURL_USER_AGENT else []),
+        *([] if CHECK_SSL_VALIDITY else ['--insecure']),
+        link.url,
+    ]
+    status = 'succeeded'
+    timer = TimedProgress(timeout, prefix='      ')
+    try:
+        html = download_url(link.url, timeout=timeout)
+        match = re.search(HTML_TITLE_REGEX, html)
+        output = htmldecode(match.group(1).strip()) if match else None
+        if output:
+            if not link.title or len(output) >= len(link.title):
+                output = ("database", "title", output)
+        else:
+            raise ArchiveError('Unable to detect page title')
+    except Exception as err:
+        status = 'failed'
+        output = ("exception", err)
+    finally:
+        timer.end()
+
+    return ArchiveResult(
+        cmd=cmd,
+        pwd=link.link_dir,
+        cmd_version=CURL_VERSION,
+        output=output,
+        status=status,
+        **timer.stats,
+    )
